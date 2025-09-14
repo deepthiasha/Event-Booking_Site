@@ -52,7 +52,7 @@ pipeline {
         withAWS(region: "${AWS_REGION}", credentials: 'aws-s3-direct') {
           powershell '''
             $zipPath = Join-Path $env:WORKSPACE "react-app.zip"
-            aws s3 cp "$zipPath" "s3://${env:S3_BUCKET}/react-app.zip" --only-show-errors
+            aws s3 cp "$zipPath" "s3://eventsbookings3/react-app/react-app.zip" --only-show-errors
           '''
         }
       }
