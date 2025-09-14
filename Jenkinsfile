@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     AWS_REGION = 'us-east-1'
-    S3_BUCKET  = 'eventsbookings3 '
+    S3_BUCKET  = 'eventsbookings3'
     BUILD_DIR  = 'dist'  
   }
 
