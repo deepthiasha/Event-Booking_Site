@@ -3,8 +3,8 @@ pipeline {
 
   environment {
     AWS_REGION = 'us-east-1'
-    S3_BUCKET  = 'eventsbookings3'
-    BUILD_DIR  = 'dist'    
+    S3_BUCKET  = 'eventsbookings3 '
+    BUILD_DIR  = 'dist'  
   }
 
   stages {
@@ -12,16 +12,36 @@ pipeline {
       steps { checkout scm }
     }
 
+    stage('Tool versions') {
+      steps {
+        powershell '''
+          node -v
+          npm -v
+          aws --version
+        '''
+      }
+    }
+
     stage('Build & Package (frontend)') {
       steps {
         dir('frontend') {
-          sh '''
-            npm ci || npm install
+          powershell '''
+            # Install deps & build
+            npm ci 2>$null; if ($LASTEXITCODE -ne 0) { npm install }
             npm run build
-            [ -d "${BUILD_DIR}" ] || { echo "ERROR: ${BUILD_DIR} not found"; exit 1; }
-            rm -f react-app.zip
-            zip -r react-app.zip "${BUILD_DIR}/"
-            mv react-app.zip "$WORKSPACE/react-app.zip"
+
+            # Validate build dir
+            if (-not (Test-Path "$env:BUILD_DIR")) {
+              Write-Error "ERROR: $env:BUILD_DIR not found. Set BUILD_DIR correctly (dist/build)."
+              exit 1
+            }
+
+            # Create zip at workspace root
+            $zipPath = Join-Path $env:WORKSPACE "react-app.zip"
+            if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+            Compress-Archive -Path (Join-Path $env:BUILD_DIR '*') -DestinationPath $zipPath -Force
+
+            Write-Host "Packaged: $zipPath"
           '''
         }
       }
@@ -30,7 +50,10 @@ pipeline {
     stage('Upload to S3') {
       steps {
         withAWS(region: "${AWS_REGION}", credentials: 'aws-s3-direct') {
-          sh 'aws s3 cp "$WORKSPACE/react-app.zip" "s3://${S3_BUCKET}/react-app.zip" --only-show-errors'
+          powershell '''
+            $zipPath = Join-Path $env:WORKSPACE "react-app.zip"
+            aws s3 cp "$zipPath" "s3://${env:S3_BUCKET}/react-app.zip" --only-show-errors
+          '''
         }
       }
     }
