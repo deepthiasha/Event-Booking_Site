@@ -19,8 +19,7 @@ pipeline {
           tar -czf react-app.tar.gz -C frontend $SRC
         '''
       }
-    }
-
+    } //Hello
     stage('Upload to S3 (instance role)') {
       steps {
         sh '''
