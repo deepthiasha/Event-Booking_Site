@@ -3,7 +3,6 @@ pipeline {
   environment {
     AWS_REGION = 'us-east-1'
     S3_BUCKET  = 'eventsbookings3'
-    BUILD_DIR  = 'dist'   
   }
   stages {
     stage('Checkout') { steps { checkout scm } }
@@ -15,17 +14,19 @@ pipeline {
           npm ci || npm install
           npm run build
           cd ..
-          # create tar.gz without needing zip installed
-          tar -czf react-app.tar.gz -C frontend ${BUILD_DIR}
+          # tar.gz works everywhere; use 'build' for CRA or 'dist' for Vite
+          if [ -d frontend/dist ]; then SRC=dist; else SRC=build; fi
+          tar -czf react-app.tar.gz -C frontend $SRC
         '''
       }
     }
 
-    stage('Upload to S3') {
+    stage('Upload to S3 (instance role)') {
       steps {
-        withAWS(region: "${AWS_REGION}", credentials: 'aws-cred') {
-          sh 'aws s3 cp react-app.tar.gz s3://${S3_BUCKET}/react-app.tar.gz --only-show-errors'
-        }
+        sh '''
+          aws sts get-caller-identity --region ${AWS_REGION}
+          aws s3 cp react-app.tar.gz s3://${S3_BUCKET}/react-app.tar.gz --only-show-errors --region ${AWS_REGION}
+        '''
       }
     }
   }
