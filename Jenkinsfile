@@ -19,7 +19,7 @@ pipeline {
           tar -czf react-app.tar.gz -C frontend $SRC
         '''
       }
-    } //Hello
+    } 
     stage('Upload to S3 (instance role)') {
       steps {
         sh '''
@@ -27,6 +27,19 @@ pipeline {
           aws s3 cp react-app.tar.gz s3://${S3_BUCKET}/react-app.tar.gz --only-show-errors --region ${AWS_REGION}
         '''
       }
+    }
+    stage('Package for CodeDeploy') {
+      steps {
+        sh '''
+          set -e
+          BUILD_DIR=$( [ -d frontend/dist ] && echo frontend/dist || echo frontend/build )
+          [ -d "$BUILD_DIR" ] || { echo "No dist/ or build/ found"; exit 1; }
+
+          # Create archive with appspec.yml at root + build contents at root
+          tar -czf react-app.tar.gz appspec.yml -C "$BUILD_DIR" .
+
+        '''
+     }
     }
   }
 }
