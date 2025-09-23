@@ -13,7 +13,7 @@ import Footer from './components/Footer'
 import AdminCreateEvent from './pages/AdminCreateEvent'
 import AdminEditEvent from './pages/AdminEditEvent'
 import { useAuth } from './lib/useAuth'
-
+//asha deepthi
 function NotAdmin() {
   return <div className="text-center text-red-600 mt-10 text-lg font-bold">You must be an admin to access this page.</div>;
 }
